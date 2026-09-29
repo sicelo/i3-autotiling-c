@@ -37,6 +37,9 @@
 #define SUBSCRIBE_WINDOW_EVENT_PAYLOAD     "[\"window\"]"
 #define SUBSCRIBE_WINDOW_EVENT_PAYLOAD_LEN 10
 
+#define ERR_FAILED_TO_SUBSCRIBE "Failed to subscribe to i3 window events.\n"
+#define LEN_FAILED_TO_SUBSCRIBE sizeof(ERR_FAILED_TO_SUBSCRIBE) - 1
+
 /*
  * Ipc Listener Return Values Definitions
  */
@@ -45,24 +48,36 @@
 #define EVENT_ERROR   -1
 
 
-
-ssize_t exact_read(int fd, void *buf, size_t count)
+/*
+ * Function for safe reading from Advanced Programming in the Unix Environment 3rd Edition
+ * https://raw.githubusercontent.com/zwan074/technical-books/master/Advanced.Programming.in.the.UNIX.Environment.3rd.Edition.0321637739.pdf
+ */
+ssize_t readn(int fd, void *ptr, size_t n)
 {
-        size_t total_read = 0;
-        char *ptr = (char *)buf;
+        size_t  nleft;
+        ssize_t nread;
 
-        while (total_read < count) {
-                ssize_t n = read(fd, ptr + total_read, count - total_read);
-                if (n <= 0)
-                        return n;
-                total_read += n;
+        nleft = n;
+        while (nleft > 0)
+        {
+                if ((nread = read(fd, ptr, nleft)) < 0)
+                {
+                        if (nleft == n)
+                                return -1;
+                        else break;
+                } else if (nread == 0) {
+                        break;
+                }
+                nleft -= nread;
+                ptr   += nread;
         }
-
-        return total_read;
+        return (n - nleft);
 }
+
 
 /*
  * Simple ASCII To Integer (atoi) implementation
+ * Implemented that way to not need stdio.h
  */
 int simple_atoi(const char *str)
 {
@@ -106,16 +121,18 @@ void flush_reply(int fd, uint32_t size)
 {
         char buf[512] = {0};
         uint32_t remaining = size;
-        while (remaining > 0) {
+
+        while (remaining > 0)
+        {
                 uint32_t to_read = remaining;
 
                 if (remaining > sizeof(buf))
                         to_read = sizeof(buf);
 
-                ssize_t n = read(fd, buf, to_read);
+                ssize_t n = readn(fd, buf, to_read);
 
                 if (n <= 0)
-                        break;
+                         break;
 
                 remaining -= n;
         }
@@ -174,7 +191,7 @@ int window_events_subscribe(int i3_fd_event)
         write(i3_fd_event, &header, sizeof(struct i3_ipc_header));
         write(i3_fd_event, SUBSCRIBE_WINDOW_EVENT_PAYLOAD, SUBSCRIBE_WINDOW_EVENT_PAYLOAD_LEN);
 
-        if (exact_read(i3_fd_event, &reply_header, sizeof(struct i3_ipc_header)) <= 0)
+        if (readn(i3_fd_event, &reply_header, sizeof(struct i3_ipc_header)) <= 0)
                 return -1;
 
         flush_reply(i3_fd_event, reply_header.size);
@@ -199,7 +216,7 @@ int read_single_window_event(int i3_fd_event, int *out_width, int *out_height)
         struct i3_ipc_header event_header = {0};
         char json_payload[4096] = {0};
 
-        ssize_t n = exact_read(i3_fd_event, &event_header, sizeof(struct i3_ipc_header));
+        ssize_t n = readn(i3_fd_event, &event_header, sizeof(struct i3_ipc_header));
         size_t total_read = 0;
 
         if (n <= 0)
@@ -216,7 +233,7 @@ int read_single_window_event(int i3_fd_event, int *out_width, int *out_height)
                 goto out;
         }
 
-        n = exact_read(i3_fd_event, json_payload, event_header.size);
+        n = readn(i3_fd_event, json_payload, event_header.size);
         if (n <= 0)
                 goto out;
 
@@ -245,8 +262,11 @@ out:
 }
 
 /*
-
-*/
+ * Sends command to i3 through the dedicated command socket
+ * (There is no such thing in i3-ipc but we use it that way)
+ * The command is either "split h" or "split v"
+ * which changes the orentation of the next split
+ */
 int send_i3_split_command(int i3_cmd_fd, const char *split_x)
 {
         struct i3_ipc_header header = {
@@ -259,7 +279,7 @@ int send_i3_split_command(int i3_cmd_fd, const char *split_x)
         write(i3_cmd_fd, &header, sizeof(struct i3_ipc_header));
         write(i3_cmd_fd, split_x, header.size);
 
-        if (exact_read(i3_cmd_fd, &reply_header, sizeof(struct i3_ipc_header)) <= 0)
+        if (readn(i3_cmd_fd, &reply_header, sizeof(struct i3_ipc_header)) <= 0)
                 return -1;
 
         flush_reply(i3_cmd_fd, reply_header.size);
@@ -267,16 +287,17 @@ int send_i3_split_command(int i3_cmd_fd, const char *split_x)
         return 0;
 }
 
+
+
+
+
+
 volatile sig_atomic_t keep_running = 1;
 void handle_signal(int sig)
 {
         (void)sig;
         keep_running = 0;
 }
-
-
-
-
 /*
  * The combination of all of the above,
  * We get two file descriptors, one for reading window events one for sending
@@ -304,7 +325,11 @@ int main(void)
                 return 1;
         }
 
-        window_events_subscribe(i3_fd_event);
+        if (window_events_subscribe(i3_fd_event) == -1)
+        {
+                write(STDOUT_FILENO, ERR_FAILED_TO_SUBSCRIBE, LEN_FAILED_TO_SUBSCRIBE);
+                goto closing;
+        }
 
         while (keep_running) {
                 int event = read_single_window_event(i3_fd_event, &width, &height);
@@ -320,6 +345,7 @@ int main(void)
                 }
         }
 
+closing:
         close(i3_fd_event);
         close(i3_cmd_fd);
         write(STDOUT_FILENO, EXIT_MESSAGE, LEN_EXIT_MESSAGE);
