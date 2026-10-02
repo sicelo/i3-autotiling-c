@@ -198,6 +198,7 @@ The C Programming Language - 2nd Edition, by Brian W.Kernighan and Dennis D.Ritc
 The only changes are the name of the function the change:
 `char[]` -> `const char *str`
 and the we defined res instead of n.
+
 ---
 ### 3. Function get_i3_socket_path()
 #### Source
