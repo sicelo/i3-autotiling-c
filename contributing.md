@@ -57,7 +57,7 @@ They follow this format
 #define ERR_<error description> "Message for console"
 #define LEN_<error description> sizeof(ERR_<error description>) - 1
 ```
-*Note: <error description> is a placeholder for the example*
+*Note: `<error description>` is a placeholder for the example*
 Usage:
 ```c
 write(STDOUT_FILENO, ERR_<error description>, LEN_<error description>);
@@ -177,6 +177,7 @@ specify, this is because if we miss anything our future reads will not be synchr
 and the program seizes to function.
 For more details click on the link and read from the book.
 
+---
 ### 2. Function simple_atoi()
 #### Source code
 ```c
@@ -198,6 +199,7 @@ The C Programming Language - 2nd Edition, by Brian W.Kernighan and Dennis D.Ritc
 The only changes are the name of the function the change:
 `char[]` -> `const char *str`
 and the we defined res instead of n.
+
 ---
 ### 3. Function get_i3_socket_path()
 #### Source
@@ -226,6 +228,7 @@ Else we return the file descriptor of the socket.
 
 In our program we do this two times, to have one connection for reading window events,
 and the second time to have a channel for sending the split commands.
+
 ---
 ### 4. Function flush_reply()
 #### Source code
@@ -257,6 +260,7 @@ Many times we get a reply in the buffer that we want to ignore, it is important
 that we get rid of these messages, that's why this function exists.
 It uses a static buffer of sufficient size to read it and discard it.
 It goes without saying that it is a helper function
+
 ---
 ### 5. Function connect_to_i3()
 #### Source code
@@ -314,6 +318,7 @@ for `printf()`, strictly following our rule to minimize includes.
 If everything succeeds, the `connect()` system call links our empty socket to the
 i3 window manager, and we return the file descriptor so the rest of the program can
 start reading or writing.
+
 ---
 ### 6. Function window_events_subscribe()
 #### Source code
@@ -348,6 +353,7 @@ reply since it is really improbable that we can't subscribe at this point.
 Despite this, if our read for the reply by the ipc fails we return `-1`, indicating that
 our connection broke.
 A return value of `0` means a successful subscription to the window events.
+
 ---
 ### 7. Function read_single_window_event()
 Here the source code is not given all at once since it is a very big code block
@@ -443,6 +449,7 @@ The correct dimensions are inside `rect`, so we first point the `rect_ptr` to `r
 if it is not found we exit, if found then from there we search for the first instance of
 `height` and `width`, then if both are not null with the correct offset we extract their
 values.
+
 ---
 ### 8. Function send_i3_split_command()
 #### Source code
@@ -472,6 +479,7 @@ In this function in the same way, we get a header ready to let i3 know that
 the incoming message is a command. Then we have a choice between sending
 a split horizontally or a split vertically command. After that we clean up
 by flushing the reply.
+
 ---
 ### 9. Function handle_signal()
 #### Source code
@@ -502,6 +510,7 @@ call (most standard library functions are not "async-signal-safe").
 By doing nothing but flipping a single integer flag, we guarantee the handler will
 never cause a deadlock or crash. It simply tells the `main()` function to break the
 loop and handle the socket cleanup securely in the `closing:` block.
+
 ---
 ### 10. Function main()
 #### Source code
