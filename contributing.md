@@ -294,7 +294,7 @@ out:
 #### Explanation
 This function is used after we have saved the path to the socket.
 Its goal is to return the file descriptor `socket_fd` so we can communicate with i3.
-As we saw in [get_i3_socket_path() function](3.-Function-get_i3_socket_path())
+As we saw in [get_i3_socket_path() function](#3-Function-get_i3_socket_path())
 if we don't get the path we have `NULL` stored. If this function sees `NULL` in
 the `socket_path` it throws an error. Then we check for the return of the `socket()`
 command.
@@ -308,7 +308,7 @@ variable gives us an unexpectedly long path.
 This is a classic C pattern (heavily used in the Linux kernel) that keeps the code
 clean and prevents us from writing `return -1;` repeatedly. Also, when an error occurs,
 we use `write(STDOUT_FILENO, ...)` paired with the `ERR_` macros we defined in the 
-[Definitions section](#1.-Error-Messages). This avoids the need to include `<stdio.h>`
+[Definitions section](#1-Error-Messages). This avoids the need to include `<stdio.h>`
 for `printf()`, strictly following our rule to minimize includes.
 
 If everything succeeds, the `connect()` system call links our empty socket to the
@@ -341,7 +341,7 @@ int window_events_subscribe(int i3_fd_event)
 #### Explanation
 In order for the i3 ipc to transmit the correct messages for our program through the
 socket we need to request them by sending the correct message. We have it defined
-[in the definitions](#3.-Payloads) for readability. We use the `i3_ipc_header` that we
+[in the definitions](#3-Payloads) for readability. We use the `i3_ipc_header` that we
 include from `<i3/ipc.h>`. We get it ready and then send it to the ipc and we flush the
 reply since it is really improbable that we can't subscribe at this point.
 
