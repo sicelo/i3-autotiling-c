@@ -353,6 +353,7 @@ reply since it is really improbable that we can't subscribe at this point.
 Despite this, if our read for the reply by the ipc fails we return `-1`, indicating that
 our connection broke.
 A return value of `0` means a successful subscription to the window events.
+
 ---
 ### 7. Function read_single_window_event()
 Here the source code is not given all at once since it is a very big code block
