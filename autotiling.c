@@ -1,8 +1,6 @@
 /*
  * Style follows the Linux Kernel standards as found here:
  * https://docs.kernel.org/process/coding-style.html
- * One exception is the typedef struct, which is left there for convenience,
- * also, the extern variable.
  */
 #include <i3/ipc.h>
 #include <string.h>
@@ -31,17 +29,23 @@
 #define ERR_SOCKET_ERROR_ABORT "Exiting due to socket Error ..."
 #define LEN_SOCKET_ERROR_ABORT sizeof(ERR_SOCKET_ERROR_ABORT) - 1
 
-#define EXIT_MESSAGE "\nClosed sockets. Exiting ...\n"
-#define LEN_EXIT_MESSAGE sizeof(EXIT_MESSAGE) - 1
-
-#define SUBSCRIBE_WINDOW_EVENT_PAYLOAD     "[\"window\"]"
-#define SUBSCRIBE_WINDOW_EVENT_PAYLOAD_LEN 10
-
 #define ERR_FAILED_TO_SUBSCRIBE "Failed to subscribe to i3 window events.\n"
 #define LEN_FAILED_TO_SUBSCRIBE sizeof(ERR_FAILED_TO_SUBSCRIBE) - 1
 
 /*
- * Ipc Listener Return Values Definitions
+ * Exit message for closing
+ */
+#define EXIT_MESSAGE "\nClosed sockets. Exiting ...\n"
+#define LEN_EXIT_MESSAGE sizeof(EXIT_MESSAGE) - 1
+
+/*
+ * Payload for sending
+ */
+#define SUBSCRIBE_WINDOW_EVENT_PAYLOAD     "[\"window\"]"
+#define SUBSCRIBE_WINDOW_EVENT_PAYLOAD_LEN 10
+
+/*
+ * i3 Ipc Listener Return Values Definitions
  */
 #define EVENT_IGNORE  0
 #define EVENT_FOCUS   1
@@ -82,7 +86,9 @@ ssize_t readn(int fd, void *ptr, size_t n)
 int simple_atoi(const char *str)
 {
         int res = 0;
-        for (int i = 0; str[i] >= '0' && str[i] <= '9'; ++i)
+        int i = 0;
+
+        for (i; str[i] >= '0' && str[i] <= '9'; ++i)
                 res = res * 10 + (str[i] - '0');
 
         return res;
@@ -121,10 +127,11 @@ void flush_reply(int fd, uint32_t size)
 {
         char buf[512] = {0};
         uint32_t remaining = size;
+        uint32_t to_read = 0;
 
         while (remaining > 0)
         {
-                uint32_t to_read = remaining;
+                to_read = remaining;
 
                 if (remaining > sizeof(buf))
                         to_read = sizeof(buf);
@@ -217,7 +224,6 @@ int read_single_window_event(int i3_fd_event, int *out_width, int *out_height)
         char json_payload[4096] = {0};
 
         ssize_t n = readn(i3_fd_event, &event_header, sizeof(struct i3_ipc_header));
-        size_t total_read = 0;
 
         if (n <= 0)
                 goto out;
