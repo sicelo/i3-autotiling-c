@@ -57,7 +57,7 @@ They follow this format
 #define ERR_<error description> "Message for console"
 #define LEN_<error description> sizeof(ERR_<error description>) - 1
 ```
-*Note: <error description> is a placeholder for the example*
+*Note: `<error description>` is a placeholder for the example*
 Usage:
 ```c
 write(STDOUT_FILENO, ERR_<error description>, LEN_<error description>);
