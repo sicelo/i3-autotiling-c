@@ -88,7 +88,11 @@ int simple_atoi(const char *str)
         int res = 0;
         int i = 0;
 
-        for (i; str[i] >= '0' && str[i] <= '9'; ++i)
+        /* If first character is a space, skip */
+        if (str[i] == ' ')
+                i = 1;
+
+        for (; str[i] >= '0' && str[i] <= '9'; ++i)
                 res = res * 10 + (str[i] - '0');
 
         return res;
@@ -246,13 +250,18 @@ int read_single_window_event(int i3_fd_event, int *out_width, int *out_height)
         json_payload[event_header.size] = '\0';
 
         is_focus = strstr(json_payload, "\"change\":\"focus\"");
-        is_new   = strstr(json_payload, "\"change\":\"new\"");
+        if (!is_focus)
+                is_focus = strstr(json_payload, "\"change\": \"focus\"");
+
+        is_new = strstr(json_payload, "\"change\":\"new\"");
+        if (!is_new)
+                is_new = strstr(json_payload, "\"change\": \"new\"");
 
         if (!is_focus && !is_new)
                 goto out;
 
         result = EVENT_FOCUS;
-        rect_ptr = strstr(json_payload, "\"rect\":{");
+        rect_ptr = strstr(json_payload, "\"rect\":");
         if (rect_ptr != NULL) {
                 char *width_ptr = strstr(rect_ptr, "\"width\":");
                 char *height_ptr = strstr(rect_ptr, "\"height\":");

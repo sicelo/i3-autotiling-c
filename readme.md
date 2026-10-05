@@ -1,6 +1,6 @@
 # i3-autotiling-c
 
-Written in C, uses practically zero ram. Works with i3. More tiling behaviours will be implemented in the future.
+Written in C, uses practically zero ram. Designed for i3, but also works with sway. More tiling behaviours will be implemented in the future.
 Inspired by [nwg-piotr](https://github.com/nwg-piotr/autotiling) and [suyjuris](https://github.com/suyjuris/i3ipc-simple).
 
 | ![Demo](./assets/Demo.gif) | ![Demo without](./assets/Demo-without.gif) |
@@ -48,6 +48,7 @@ mv i3-autotiling-c ~/.local/bin/
 
 **How to get the `i3/ipc.h` header:**
 Depending on your distribution, you might already have this file located at `/usr/include/i3/ipc.h` if you installed i3.
+Note that this header is also required even if the utility will be used with sway.
 If your compiler throws an error saying the file is missing, you can easily get it using one of two methods:
 
 -   **Method A (Direct Download):** 

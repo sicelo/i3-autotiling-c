@@ -186,7 +186,10 @@ int simple_atoi(const char *str)
         int res = 0;
         int i = 0;
 
-        for (i; str[i] >= '0' && str[i] <= '9'; ++i)
+        if (str[i] == ' ')
+                i = 1;
+
+        for (; str[i] >= '0' && str[i] <= '9'; ++i)
                 res = res * 10 + (str[i] - '0');
 
         return res;
@@ -198,7 +201,9 @@ Inspired by the book:
 The C Programming Language - 2nd Edition, by Brian W.Kernighan and Dennis D.Ritchie
 The only changes are the name of the function the change:
 `char[]` -> `const char *str`
-and the we defined res instead of n.
+and the we defined res instead of n. Another important change is shifting the start
+position by one if the first character is a space. This is necessary since some
+json payloads, such as used by sway, include a space after every colon.
 
 ---
 ### 3. Function get_i3_socket_path()
@@ -221,9 +226,9 @@ const char *get_i3_socket_path(void)
 Almost fully transparent by the comments on the `autotiling.c` file.
 2 checks are happening.
 First we try to retrieve the environment variable `I3SOCK`. It should not
-fail if i3 is installed in the system. In the case the environment variable
+fail if i3 is running on the system. In the case the environment variable
 is not set we also check the file `/tmp/i3-ipc.sock`.
-If both fail then we assume that i3 is not installed on the system and return `NULL`.
+If both fail then we assume that i3 is not running on the system and return `NULL`.
 Else we return the file descriptor of the socket.
 
 In our program we do this two times, to have one connection for reading window events,
@@ -419,7 +424,12 @@ the payload.
     json_payload[event_header.size] = '\0';
 
     is_focus = strstr(json_payload, "\"change\":\"focus\"");
-    is_new   = strstr(json_payload, "\"change\":\"new\"");
+    if (!is_focus)
+            is_focus = strstr(json_payload, "\"change\": \"focus\"");
+
+    is_new = strstr(json_payload, "\"change\":\"new\"");
+    if (!is_new)
+            is_new = strstr(json_payload, "\"change\": \"new\"");
 
     if (!is_focus && !is_new)
             goto out;
@@ -427,11 +437,13 @@ the payload.
 In this part is the first check to see if the payload is relevant.
 The only cases where the height, and the width of a window changes is if
 we focus on a new window or if we focus on an existing window, that's what we
-are looking for here.
+are looking for here. We check this in two attempts, first for json variants,
+such as i3, that do not include a space after the colon. If this fails, we try
+with a space after the colon.
 Now it's time to extract the height and the width.
 ```c
     result = EVENT_FOCUS;
-    rect_ptr = strstr(json_payload, "\"rect\":{");
+    rect_ptr = strstr(json_payload, "\"rect\":");
     if (rect_ptr != NULL) {
             char *width_ptr = strstr(rect_ptr, "\"width\":");
             char *height_ptr = strstr(rect_ptr, "\"height\":");
